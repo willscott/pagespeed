@@ -1,0 +1,36 @@
+These scripts are used to measure how long it takes to load pages on planet lab nodes.
+
+It uses phantomjs as the client, a headless webkit based browser.
+
+=== Usage ===
+==== 1. Prepare Prerequisites ====
+* If you are using tor, grab the libevent referenced in tor.sh into this directory.
+* Compile phantomjs
+	Do this on one of the nodes you will be testing on, so that you get an appropriate binary.
+	Most recent source lives at https://github.com/ariya/phantomjs
+	Run the deploy/build-linux.sh script to create an appropriate binary.
+	Copy the resulting binary to this directory.
+==== 2. Deploy ====
+vxargs -a <nodelist> -o <output> scp uw_oneswarm@{}:measure/ *
+
+==== 3. Run ====
+With Tor:
+vxargs -a <nodelist> -o output ssh uw_oneswarm@{} "cd measure && bash tor.sh && bash harness.sh tor"
+Without:
+vxargs -a <nodelist> -o output ssh uw_oneswarm@{} "cd measure && bash harness.sh"
+
+==== 4. Analyze ====
+
+Clean the output:
+
+for [file in *]
+do
+  cat $file | awk '/^[a-z.]+[:space:][:digit:]+[:space:]/ { print $1 " " $2 }' > $file.clean
+done
+
+Visualize!
+(mathematica)
+nodes = FileNames["*", NotebookDirectory[] <> "data"];
+data = Map[ReadList[#, {Word, Number}]&, nodes];
+nodeMeans = Map[Mean[#[[All,2]]]&, data];
+BarChart[Sort[nodeMeans]]
