@@ -3,13 +3,18 @@
 BINARY="./phantomjs"
 SCRIPT="gettime.js"
 LIMIT=30
+XVFB=0
 
-sudo killall -9 Xvfb
-sleep 2
-Xvfb :1 -screen 0 1024x768x8 -fc fixed && env DISPLAY=:1 2>&1 >/dev/null &
-disown
-sleep 2
-export DISPLAY=:1
+if [ -z "$DISPLAY" ]
+then
+	XVFB=1
+	sudo killall -q -9 Xvfb
+	sleep 2
+	Xvfb :1 -screen 0 1024x768x8 -fc fixed && env DISPLAY=:1 >/dev/null 2>&1 &
+	disown
+	sleep 2
+	export DISPLAY=:1
+fi
 
 if [ -z "$1" ]
 then
@@ -18,17 +23,17 @@ else
   PROXY="--proxy-type=socks5 --proxy=127.0.0.1:27004"
 fi
 
-killall runner.bash 2>&1 >/dev/null
-killall $BINARY 2>&1 >/dev/null
+killall -q runner.bash
+killall -q $BINARY
 sleep 1
-killall -9 $BINARY 2>&1 >/dev/null
+killall -q -9 $BINARY
 
 ###Begin###
 
 function run {
   cat > runner.bash <<EOF
 #!/bin/bash
-out=\`$BINARY $PROXY $SCRIPT http://$1\`
+out=\`$BINARY $PROXY $SCRIPT $1\`
 echo $1 \$out
 EOF
 
@@ -37,14 +42,14 @@ EOF
   t=0
   while true
   do
-    kill -n 0 $pid 2>&1 >/dev/null
+    kill -n 0 $pid >/dev/null 2>&1
     if [ $? -eq 0 ]
     then
       let "t+=1"
       sleep 1
       if [ $t -gt $LIMIT ]
       then
-        kill -9 $pid 2>&1 >/dev/null
+        kill -9 $pid >/dev/null 2>&1
         echo "$1 FAIL Timeout"
         break
       fi
@@ -66,14 +71,15 @@ $BINARY $PROXY $SCRIPT http://linkedin.com > /dev/null
 for line in $URLS;
 do
   run $line
-  killall $BINARY 2>&1 >/dev/null
+  killall -q $BINARY
   sleep 1
 done
 
 echo "DONE"
-killall Xvfb
-killall tor
-sleep 1
-killall -9 Xvfb
-killall -9 tor
+if [ "$XVFB" == "1" ]
+then
+	killall -q Xvfb
+	sleep 1
+	killall -q -9 Xvfb
+fi
 exit 0
