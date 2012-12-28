@@ -2,10 +2,11 @@
 
 BINARY="./phantomjs"
 SCRIPT="gettime.js"
+MAC=`uname`
 LIMIT=30
 XVFB=0
 
-if [ -z "$DISPLAY" ]
+if [ -z "$DISPLAY" ] && [ "$MAC" != "Darwin" ]
 then
 	XVFB=1
 	sudo killall -q -9 Xvfb
@@ -23,10 +24,18 @@ else
   PROXY="--proxy-type=socks5 --proxy=127.0.0.1:27004"
 fi
 
-killall -q runner.bash
-killall -q $BINARY
-sleep 1
-killall -q -9 $BINARY
+if [ "$MAC" == "Darwin" ]
+then
+	pkill runner.bash
+	pkill $BINARY
+	sleep 1
+	pkill -9 $BINARY
+else
+	killall -q runner.bash
+	killall -q $BINARY
+	sleep 1
+	killall -q -9 $BINARY
+fi
 
 ###Begin###
 
@@ -71,7 +80,12 @@ $BINARY $PROXY $SCRIPT http://linkedin.com > /dev/null
 for line in $URLS;
 do
   run $line
-  killall -q $BINARY
+	if [ "$MAC" == "Darwin" ]
+	then
+		pkill $BINARY
+	else
+  	killall -q $BINARY
+	fi
   sleep 1
 done
 
