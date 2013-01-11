@@ -1,3 +1,5 @@
 measurement/phantomjs
 measurement/urls.txt
 measurement/runner.bash
+measurement/selenium.jar
+measurement/selenium
